@@ -1,0 +1,21 @@
+[package]
+name = "softmata-core"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/softmata/softmata-core"
+rust-version = "1.75"
+description = "Foundational robotics types and traits for the SOFTMATA ecosystem"
+keywords = ["robotics", "types", "sensor", "geometry"]
+categories = ["science::robotics"]
+
+[dependencies]
+nalgebra = { version = "0.33", default-features = false, features = ["serde-serialize"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+
+[features]
+default = ["std"]
+std = ["nalgebra/std", "serde/std"]
+
+[dev-dependencies]
+serde_json = "1.0"
