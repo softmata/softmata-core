@@ -10,8 +10,9 @@ pub use crate::sensor::{
 };
 
 pub use crate::messages::{
-    BatteryState, CmdVel, DepthImageDesc, DiagnosticStatus, EmergencyStop, Heartbeat, ImageDesc,
-    ImuReading, JointState, LaserScanDesc, NavSatFix, Odometry, PointCloudDesc, DEPTH_F32,
+    BatteryState, CameraIntrinsics, CmdVel, DepthImageDesc, DiagnosticStatus, EmergencyStop,
+    Heartbeat, ImageDesc, ImuReading, JointState, LaserScanDesc, NavSatFix, Odometry,
+    PointCloudDesc, DEPTH_F32,
     DEPTH_U16, DIAG_ERROR, DIAG_FATAL, DIAG_OK, DIAG_WARN, ENC_BGR8, ENC_MONO16, ENC_MONO8,
     ENC_RGB8, ENC_RGBA8, FIELD_XYZ, FIELD_XYZI, FIELD_XYZRGB, FIELD_XYZRGBN, MAX_JOINTS,
 };

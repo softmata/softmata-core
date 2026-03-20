@@ -298,6 +298,72 @@ impl NavSatFix {
 }
 
 // =============================================================================
+// Camera Intrinsics
+// =============================================================================
+
+/// Pinhole camera intrinsic parameters.
+///
+/// Canonical representation used by all projects needing camera models:
+/// depth-to-pointcloud, visual SLAM, object detection, etc.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Pod, Zeroable)]
+#[repr(C)]
+pub struct CameraIntrinsics {
+    /// Focal length X in pixels.
+    pub fx: f64,
+    /// Focal length Y in pixels.
+    pub fy: f64,
+    /// Principal point X in pixels.
+    pub cx: f64,
+    /// Principal point Y in pixels.
+    pub cy: f64,
+    /// Image width in pixels.
+    pub width: u32,
+    /// Image height in pixels.
+    pub height: u32,
+}
+
+impl CameraIntrinsics {
+    pub fn new(fx: f64, fy: f64, cx: f64, cy: f64, width: u32, height: u32) -> Self {
+        Self { fx, fy, cx, cy, width, height }
+    }
+
+    /// Intel RealSense D435 at 640x480.
+    pub fn realsense_d435() -> Self {
+        Self::new(382.0, 382.0, 320.0, 240.0, 640, 480)
+    }
+
+    /// Intel RealSense D435 at 1280x720.
+    pub fn realsense_d435_hd() -> Self {
+        Self::new(636.0, 636.0, 640.0, 360.0, 1280, 720)
+    }
+
+    /// Luxonis OAK-D at 640x480.
+    pub fn oakd() -> Self {
+        Self::new(420.0, 420.0, 320.0, 240.0, 640, 480)
+    }
+
+    /// Generic VGA camera (approximate).
+    pub fn generic_vga() -> Self {
+        Self::new(525.0, 525.0, 320.0, 240.0, 640, 480)
+    }
+
+    /// Project a 3D point to 2D pixel coordinates.
+    pub fn project(&self, x: f64, y: f64, z: f64) -> (f64, f64) {
+        if z.abs() < 1e-10 {
+            return (self.cx, self.cy);
+        }
+        (self.fx * x / z + self.cx, self.fy * y / z + self.cy)
+    }
+
+    /// Unproject a pixel + depth to 3D point.
+    pub fn unproject(&self, u: f64, v: f64, depth: f64) -> (f64, f64, f64) {
+        let x = (u - self.cx) * depth / self.fx;
+        let y = (v - self.cy) * depth / self.fy;
+        (x, y, depth)
+    }
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
@@ -419,5 +485,35 @@ mod tests {
         let json = serde_json::to_string(&cmd).unwrap();
         let cmd2: CmdVel = serde_json::from_str(&json).unwrap();
         assert_eq!(cmd, cmd2);
+    }
+
+    #[test]
+    fn camera_intrinsics_pod() {
+        let cam = CameraIntrinsics::realsense_d435();
+        let bytes = bytemuck::bytes_of(&cam);
+        let cam2: &CameraIntrinsics = bytemuck::from_bytes(bytes);
+        assert_eq!(cam.fx, cam2.fx);
+        assert_eq!(cam.width, 640);
+    }
+
+    #[test]
+    fn camera_project_unproject_roundtrip() {
+        let cam = CameraIntrinsics::realsense_d435();
+        let (u, v) = cam.project(0.5, -0.3, 2.0);
+        let (x, y, z) = cam.unproject(u, v, 2.0);
+        assert!((x - 0.5).abs() < 1e-10);
+        assert!((y - (-0.3)).abs() < 1e-10);
+        assert_eq!(z, 2.0);
+    }
+
+    #[test]
+    fn camera_presets() {
+        let d435 = CameraIntrinsics::realsense_d435();
+        assert_eq!(d435.width, 640);
+        assert_eq!(d435.height, 480);
+        let oakd = CameraIntrinsics::oakd();
+        assert_eq!(oakd.width, 640);
+        let vga = CameraIntrinsics::generic_vga();
+        assert!((vga.fx - 525.0).abs() < 1e-10);
     }
 }
